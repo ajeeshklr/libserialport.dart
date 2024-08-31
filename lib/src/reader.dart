@@ -131,7 +131,7 @@ class _SerialPortReaderImpl implements SerialPortReader {
   void _cancelRead() {
     _receiver?.close();
     _receiver = null;
-    _isolate?.kill();
+    _isolate?.kill(priority: Isolate.immediate);
     _isolate = null;
   }
 
