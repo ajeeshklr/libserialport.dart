@@ -133,8 +133,8 @@ class _SerialPortReaderImpl implements SerialPortReader {
   }
 
   void _cancelRead() {
-    if(null != _sender){
-      _sender.send(true);
+    if (null != _sender) {
+      _sender!.send(true);
       _sender = null;
     }
     _receiver?.close();
@@ -147,12 +147,12 @@ class _SerialPortReaderImpl implements SerialPortReader {
     ReceivePort _mainToIsolateStream = ReceivePort();
     args.sendPort.send(_mainToIsolateStream.sendPort);
 
-    bool _close  = false;
+    bool _close = false;
     _mainToIsolateStream.listen((message) {
-      if(message is bool){
+      if (message is bool) {
         _close = message;
       }
-    })
+    });
 
     final port = ffi.Pointer<sp_port>.fromAddress(args.address);
     final events = _createEvents(port, _kReadEvents);
