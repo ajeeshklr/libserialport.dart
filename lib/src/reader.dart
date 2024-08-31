@@ -139,7 +139,7 @@ class _SerialPortReaderImpl implements SerialPortReader {
     }
     _receiver?.close();
     _receiver = null;
-    // _isolate?.kill(priority: Isolate.immediate);
+    _isolate?.kill(priority: Isolate.immediate);
     _isolate = null;
   }
 
