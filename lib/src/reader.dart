@@ -80,6 +80,8 @@ class _SerialPortReaderImpl implements SerialPortReader {
   final int _timeout;
   Isolate? _isolate;
   ReceivePort? _receiver;
+  SendPort? _sender;
+
   StreamController<Uint8List>? __controller;
 
   _SerialPortReaderImpl(SerialPort port, {int? timeout})
@@ -114,6 +116,8 @@ class _SerialPortReaderImpl implements SerialPortReader {
         _controller.addError(data);
       } else if (data is Uint8List) {
         _controller.add(data);
+      } else if (data is SendPort) {
+        _sender = data;
       }
     });
     final args = _SerialPortReaderArgs(
@@ -129,6 +133,10 @@ class _SerialPortReaderImpl implements SerialPortReader {
   }
 
   void _cancelRead() {
+    if(null != _sender){
+      _sender.send(true);
+      _sender = null;
+    }
     _receiver?.close();
     _receiver = null;
     _isolate?.kill(priority: Isolate.immediate);
@@ -136,10 +144,20 @@ class _SerialPortReaderImpl implements SerialPortReader {
   }
 
   static void _waitRead(_SerialPortReaderArgs args) {
+    ReceivePort _mainToIsolateStream = ReceivePort();
+    args.sendPort.send(_mainToIsolateStream.sendPort);
+
+    bool _close  = false;
+    _mainToIsolateStream.listen((message) {
+      if(message is bool){
+        _close = message;
+      }
+    })
+
     final port = ffi.Pointer<sp_port>.fromAddress(args.address);
     final events = _createEvents(port, _kReadEvents);
     var bytes = 0;
-    while (bytes >= 0) {
+    while (bytes >= 0 && false == _close) {
       bytes = _waitEvents(port, events, args.timeout);
       if (bytes > 0) {
         final data = Util.read(bytes, (ffi.Pointer<ffi.Uint8> ptr) {
